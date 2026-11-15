@@ -88,3 +88,6 @@ The weights are the app; the runtime is the app server. The same model can be 2â
 - **vLLM**: the production standard, with an OpenAI-compatible API.
 - **llama.cpp server**: lighter, runs GGUF quantized models, less common in enterprise.
 - **SGLang, TGI**: alternatives to vLLM, worth comparing later.
+
+### Why vLLM first?
+It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.

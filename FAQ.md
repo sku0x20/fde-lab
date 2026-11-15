@@ -128,9 +128,24 @@ Any that speak the OpenAI API: point it at the `/v1` base URL with the vLLM key.
 - **LibreChat**: also full-featured, built for many providers at once. Needs MongoDB and more, so heavier to run.
 - **LobeChat, NextChat**: lighter and polished, but can run client-side, which puts the API key in the browser.
 - **Your own (Gradio, Streamlit, a small web app)**: a few dozen lines on the OpenAI SDK. It's what a customer's product usually ends up being.
-- **Desktop apps (Jan, Msty, LM Studio)**: no hosting, but they run on the laptop.
+- **Desktop chat apps (Jan, Msty, Chatbox, Cherry Studio)**: no hosting, but they run on the laptop. LM Studio and Ollama are local runtimes, not clients for a remote endpoint.
 
 vLLM ships no chat UI of its own.
+
+### What's a harness?
+The program around a model that turns it into an agent. The model only maps text to text; the harness supplies:
+- the system prompt and tool definitions (read, edit, run shell, search)
+- the loop: call the model, run the tool it asks for, send the result back, repeat until done
+- context management: what goes in the window, compaction when it fills
+- permissions: which actions need a human's OK
+
+Claude Code is a harness. So are OpenCode, Aider, Goose and Codex CLI in the terminal, and Cline, Roo Code and Continue in the IDE. A chat app is not: it sends messages but runs no tools.
+
+### Why use another harness if Claude Code works?
+For daily coding, no reason. Claude Code is tuned for Claude models. The others are model-agnostic: they can drive any OpenAI-compatible endpoint, including a self-hosted vLLM model. That's the FDE use: customers who can't send code to a hosted API want a coding agent on their own model. It tests the deployment, not the harness:
+- vLLM must parse tool calls (`--enable-auto-tool-choice` plus a `--tool-call-parser` for the model), or the agent can't use tools.
+- Agent system prompts and tool definitions are large, so `--max-model-len` and the KV cache matter more than in chat.
+- Small models (4B) are weak at multi-step tool use; expect a chat app to work well before an agent does.
 
 ### Where does the frontend run?
 A RunPod pod runs one container, so the frontend can't share the vLLM pod without a custom image. The options are a separate CPU pod (fits the IaC, costs a little per hour), the laptop, or a free host for a small custom app. A server-side frontend keeps the vLLM key off the browser.

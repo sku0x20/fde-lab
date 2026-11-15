@@ -11,8 +11,8 @@ resource "runpod_pod" "vllm" {
   name  = "vllm-qwen35-4b"
   image = "vllm/vllm-openai:v0.33.0" # entrypoint is `vllm serve`; built on CUDA 13.0
 
-  gpu_type_id      = "NVIDIA GeForce RTX 4090"
-  gpu_count        = 1
+  gpu_type_id = "NVIDIA GeForce RTX 4090"
+  gpu_count   = 1
   # community kept landing on one host whose GPU failed CUDA init, likely because few
   # community 4090s have CUDA 13.0 drivers
   cloud            = "SECURE"

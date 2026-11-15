@@ -250,6 +250,8 @@ Five files from `Comfy-Org/Qwen-Image-2.1`, ~36 GB at int8, the ones ComfyUI's `
 - `vae/qwen_image_2.1_vae_bf16.safetensors` (0.68 GB).
 The helper LLMs also come at 4-bit (`w4a8`, ~6.5 GB each); the image model has no smaller file. `scripts/comfyui_models.sh` fetches the int8 set.
 
+## Tokens
+
 ### What's a token?
 A chunk of text from the model's fixed vocabulary (Qwen3.5: 248,320 tokens). A common word is one token, a rare word several; in English a token is about ¾ of a word (estimate). The model reads and writes token IDs, so limits, speed and billing are all counted in tokens.
 - **prompt tokens**: the input, including the chat template's markers

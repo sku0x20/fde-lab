@@ -8,14 +8,15 @@ It starts with deployment: serving open models on rented cloud GPUs. Nothing run
 
 Models always run on RunPod. Only clients run on the laptop.
 
-1. **Desktop chat app**: a native app (Jan or Chatbox) talking to the vLLM pod. No infra change.
-2. **Server-side chat app**: Open WebUI, a Docker image.
+1. **Browser chat app**: Open WebUI, a Docker image.
    1. Run the container on the laptop, pointed at the pod.
-   2. Deploy it to a RunPod CPU pod with OpenTofu, next to the vLLM pod.
-3. **Agent harness**: OpenCode driving the vLLM pod. Needs vLLM's tool-call flags; tests context size and how a small model handles tools.
-4. **Image and video generation**: ComfyUI on a GPU pod.
+   2. Deploy it to a RunPod CPU pod with OpenTofu, next to the vLLM pod. Then it works from a phone browser too, and installs to the home screen as a web app.
+2. **Agent harness**: OpenCode driving the vLLM pod. Needs vLLM's tool-call flags; tests context size and how a small model handles tools.
+3. **Image and video generation**: ComfyUI on a GPU pod.
    1. Use it from the laptop: ComfyUI's browser UI or a local client.
    2. A server-side frontend, possibly on RunPod serverless.
+
+Later, maybe: native chat apps for phone or desktop. Skipped for now in favour of the browser.
 
 ## Stack
 

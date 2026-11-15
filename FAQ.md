@@ -147,6 +147,9 @@ For daily coding, no reason. Claude Code is tuned for Claude models. The others 
 - Agent system prompts and tool definitions are large, so `--max-model-len` and the KV cache matter more than in chat.
 - Small models (4B) are weak at multi-step tool use; expect a chat app to work well before an agent does.
 
+### Can I use it from a phone?
+Yes, once the frontend runs on a server: a container on the laptop isn't reachable from the phone. Open WebUI works in a mobile browser and installs to the home screen as a web app (PWA). A native phone app pointed straight at vLLM would hold the vLLM key on the phone; going through Open WebUI means the phone holds only an Open WebUI login.
+
 ### Where does the frontend run?
 A RunPod pod runs one container, so the frontend can't share the vLLM pod without a custom image. The options are a separate CPU pod (fits the IaC, costs a little per hour), the laptop, or a free host for a small custom app. A server-side frontend keeps the vLLM key off the browser.
 

@@ -339,6 +339,12 @@ Yes. RunPod's HTTP proxy (host `<pod id>-8000.proxy.runpod.net`) is open to the 
 ### What did the session cost?
 $0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a secure 4090 at $0.89/hr. The balance lags: it showed $0.13 spent at teardown and settled a few minutes later.
 
+### Is there something easier than ComfyUI's node graph?
+- Hosted chat apps with image models (ChatGPT, Gemini): plain English in, edits by chatting. Best at following prompts, nothing to run. Not self-hosted.
+- Open WebUI with ComfyUI as its image engine: chat to make images, ComfyUI hidden behind it. With an LLM connected, Open WebUI can expand a rough idea into a detailed prompt.
+- Simple frontends over the same models: SwarmUI (a prompt box over ComfyUI), Fooocus (SDXL only).
+- A model that follows prompts better, or one that edits by instruction (Qwen-Image, Qwen-Image-Edit), so "make them giggle more" is a prompt, not a redo.
+
 ### How do I prompt Z-Image Turbo?
 - Full sentences, not keyword lists: its text encoder is an LLM (Qwen3-4B).
 - It draws where you put things, literally. "Aliens on the platform" gives aliens on the ground, not in the ship.

@@ -7,6 +7,10 @@ terraform {
       source  = "registry.terraform.io/runpod/runpod"
       version = "~> 2.0" # 1.x uses RunPod's REST v1 API, switched off 2026-11-16
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.9"
+    }
   }
 
   # local state for now (gitignored)

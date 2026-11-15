@@ -13,7 +13,7 @@ Models always run on RunPod. Only clients run on the laptop.
   - [ ] 1.2 Deploy it to a RunPod CPU pod with OpenTofu, next to the vLLM pod. Then it works from a phone browser too, and installs to the home screen as a web app.
 - [ ] **2. Agent harness**: OpenCode driving the vLLM pod. Needs vLLM's tool-call flags; tests context size and how a small model handles tools.
 - [ ] **3. Image and video generation**: ComfyUI on a GPU pod. Images first.
-  - [ ] 3.1 Use it from the laptop: ComfyUI's browser UI or a local client.
+  - [x] 3.1 Use it from the laptop: ComfyUI's browser UI or a local client.
   - [ ] 3.2 A server-side frontend, possibly on RunPod serverless.
 
 Later, maybe: native chat apps for phone or desktop. Skipped for now in favour of the browser.

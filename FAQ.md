@@ -162,7 +162,14 @@ docker compose -f webui/compose.yaml up -d
 Then open `localhost:3000`. The first account to sign up becomes admin; users and chats live in the `open-webui` Docker volume, on the laptop. `ENABLE_PERSISTENT_CONFIG=false` matters: otherwise Open WebUI saves the vLLM URL to its database on first start and ignores the env var after, and the URL changes with every new pod.
 
 ### How big is Open WebUI, and how long does it take to start?
-`ghcr.io/open-webui/open-webui:v0.13.3`: 1.49 GB download, 5.83 GB on disk; pulled in 4.5 min. First start took 2 min 17 s, mostly downloading its RAG embedding model (`all-MiniLM-L6-v2`) into the volume; later starts skip that.
+`ghcr.io/open-webui/open-webui:v0.13.3`: 1.49 GB download, 5.83 GB on disk; pulled in 4.5 min. First start took 2 min 17 s, mostly downloading two embedding models (~920 MB) into the volume; later starts skip that.
+
+### What models does Open WebUI download, and why?
+Two small embedding models, which run on the laptop's CPU inside the container. An embedding model turns text into a vector of numbers so similar text gets similar vectors; it doesn't generate text.
+- **`sentence-transformers/all-MiniLM-L6-v2`** (22M params, 87 MB per copy): for RAG. Uploaded documents are split into chunks, embedded and stored in a local vector DB (`vector_db/` in the volume). A question gets embedded too, and the closest chunks are pasted into the prompt sent to vLLM. Open WebUI downloads the whole Hugging Face repo, every format (PyTorch, ONNX, OpenVINO, TF, Rust), so ~900 MB lands for one 87 MB model.
+- **`TaylorAI/bge-micro-v2`** (34 MB): set as `AUXILIARY_EMBEDDING_MODEL` in its evaluations code.
+
+The chat model never runs here; every reply comes from vLLM. To move embeddings off the laptop, set `RAG_EMBEDDING_ENGINE=openai` and point it at an embedding model served elsewhere, such as a second vLLM model.
 
 ## Image and video generation
 

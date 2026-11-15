@@ -120,6 +120,21 @@ It sets the cold start: a host with the image cached started the container in 6 
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.
 
+## Frontend
+
+### Which chat frontends work with a vLLM endpoint?
+Any that speak the OpenAI API: point it at the `/v1` base URL with the vLLM key.
+- **Open WebUI**: the usual pick for self-hosted models. ChatGPT-like, multi-user, chat history, RAG. One container, server-side.
+- **LibreChat**: also full-featured, built for many providers at once. Needs MongoDB and more, so heavier to run.
+- **LobeChat, NextChat**: lighter and polished, but can run client-side, which puts the API key in the browser.
+- **Your own (Gradio, Streamlit, a small web app)**: a few dozen lines on the OpenAI SDK. It's what a customer's product usually ends up being.
+- **Desktop apps (Jan, Msty, LM Studio)**: no hosting, but they run on the laptop.
+
+vLLM ships no chat UI of its own.
+
+### Where does the frontend run?
+A RunPod pod runs one container, so the frontend can't share the vLLM pod without a custom image. The options are a separate CPU pod (fits the IaC, costs a little per hour), the laptop, or a free host for a small custom app. A server-side frontend keeps the vLLM key off the browser.
+
 ## Tokens
 
 ### What's a token?

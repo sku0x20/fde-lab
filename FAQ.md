@@ -75,6 +75,24 @@ The `.tf` files and `.terraform.lock.hcl`, which pins provider versions and chec
 - `*.tfstate`: what tofu last saw of the resources. It can hold secrets in plain text.
 - `.terraform/`: provider binaries, which `tofu init` downloads again.
 
+## Storage
+
+### What storage does a RunPod pod have?
+- Container disk: local, fastest, lost on stop. $0.10/GB/month.
+- Volume disk: local, at `/workspace`, survives a stop, gone on destroy. $0.10/GB/month running, $0.20 stopped.
+- Network volume: lives apart from any pod, survives destroy. $0.07/GB/month up to 1 TB.
+- Global volume (beta): like a network volume, but not tied to a data center. Usage-billed.
+
+### What is a network volume? Is it an S3 bucket?
+No. It's a filesystem on NVMe in one data center, mounted in the pod at `/workspace` in place of the volume disk. 200-400 MB/s typical, per RunPod's docs. An S3-compatible API sits on top in some data centers (bucket = volume ID, object = file path), so files can go in or out without a pod. Real S3 is object storage with no fixed size; a network volume has a fixed size that can grow, never shrink.
+
+### What are the catches with a network volume?
+- It pins every pod that mounts it to its data center. If that data center has no free GPU of the type asked for, the pod doesn't start.
+- Secure cloud only.
+- It bills every month, pod or no pod. At a $0 balance RunPod may delete it.
+- A pod mounts it at create time only; changing the mount replaces the pod.
+- Several pods can mount one volume. Concurrent writes to the same file aren't safe.
+
 ## Serving
 
 ### What's a runtime?

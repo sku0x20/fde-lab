@@ -242,10 +242,13 @@ The image ships no models and has no setting to preload any. The other ways in a
 - Tofu: it can't run commands in a pod, and overriding the start command would replace the image's `start.sh`.
 The script runs on the pod, so it downloads at data center speed, and it skips files already there. With the weights on the volume, it runs once per volume, not per pod.
 
-### What does Z-Image Turbo need in ComfyUI?
-Three files from `Comfy-Org/Z-Image-Turbo`, ~20.7 GB: `diffusion_models/z_image_turbo_bf16.safetensors` (12.31 GB), `text_encoders/qwen_3_4b.safetensors` (8.04 GB), `vae/ae.safetensors` (0.34 GB). The repo's `nvfp4` variant needs a Blackwell GPU. `scripts/comfyui_models.sh` fetches them.
-
-## Tokens
+### What does Qwen-Image 2.1 Turbo need in ComfyUI?
+Five files from `Comfy-Org/Qwen-Image-2.1`, ~36 GB at int8, the ones ComfyUI's `image_qwen_image_2_1_turbo_t2i` and `_image_edit` templates load:
+- `diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors` (7.26 GB): the image model, ~7B.
+- `text_encoders/qwen3vl_8b_int8_convrot.safetensors` (9.35 GB): reads the prompt, and the input image for edits.
+- `text_encoders/qwen3.5_9b_qwen_image_2.1_pe_t2i.int8_convrot.safetensors` and `..._pe_i2i...` (9.47 GB each): the prompt rewriters for generating and editing.
+- `vae/qwen_image_2.1_vae_bf16.safetensors` (0.68 GB).
+The helper LLMs also come at 4-bit (`w4a8`, ~6.5 GB each); the image model has no smaller file. `scripts/comfyui_models.sh` fetches the int8 set.
 
 ### What's a token?
 A chunk of text from the model's fixed vocabulary (Qwen3.5: 248,320 tokens). A common word is one token, a rare word several; in English a token is about ¾ of a word (estimate). The model reads and writes token IDs, so limits, speed and billing are all counted in tokens.
@@ -366,7 +369,7 @@ Published comparisons are small self-run tests and split between them, so test o
 Setup for every number below: Z-Image Turbo (bf16 weights, `qwen_3_4b` text encoder) on ComfyUI v0.44.0 (`runpod/comfyui:2.2.0-comfyuiv0.44.0-cuda12.8`, PyTorch 2.10.0+cu128), one RTX 4090 (24 GB), RunPod secure cloud EU-RO-1, weights on a STANDARD network volume, 2026-11-15.
 
 ### How fast is it?
-- ~4.96 s per 1024x1024 image, 8 steps (3 runs: 4.98, 4.95, 4.96), measured with `scripts/comfyui_bench.py` through the SSH tunnel.
+- ~4.96 s per 1024x1024 image, 8 steps (3 runs: 4.98, 4.95, 4.96), measured through the SSH tunnel with a script since removed with the model (`scripts/comfyui_bench.py` in git history).
 - First image after boot: 75.45 s, almost all of it loading ~20.7 GB of weights from the network volume.
 - At $0.89/hr that's about $0.0012 per image while busy (estimate from the steady-state time).
 
@@ -379,6 +382,26 @@ Setup for every number below: Z-Image Turbo (bf16 weights, `qwen_3_4b` text enco
 
 ### What is the network volume underneath?
 A MooseFS mount (`mfs#euro-2.runpod.net`) at `/workspace`, shared with other tenants (2.1 PB filesystem). The 50 GB size is a quota, not a disk.
+
+## Qwen-Image 2.1 Turbo
+
+Setup for every number below: Qwen-Image 2.1 Turbo (int8 weights, int8 Qwen3-VL-8B encoder, int8 Qwen3.5-9B rewriters) on ComfyUI v0.44.0, the template's 8-step schedule, one RTX 4090 (24 GB), RunPod secure cloud EU-RO-1, weights on the STANDARD network volume, 2026-11-16. Measured with `scripts/qwen_image.py` through the SSH tunnel.
+
+### How fast is it?
+- Text-to-image, rewriter off: ~9.2 s per 1024x1024 image (9.28, 9.10). First image after boot: 74.96 s, mostly loading weights from the volume.
+- Text-to-image, rewriter on: ~64 s per image (63.68, 65.20); first 113.01 s. The 9B rewriter writes a ~300-500 word prompt first, and the models take turns on the GPU.
+- Edit, rewriter off: ~12 s (12.05; 20.04 for the first, which loaded the edit graph).
+- 16.6 GB of GPU memory in use after the runs.
+- Download: 35.5 GB in 543 s, ~65 MB/s.
+
+### Does it follow a rough prompt better than Z-Image Turbo?
+Yes, on the Taj Mahal test. From the same unedited one-line description, every Qwen image got the hands-over-mouth giggle that Z-Image never showed. With the rewriter on, it also lifted the monument and added saucers, which Z-Image needed four hand-written prompts for. The rewriter fills in what you left out, so it varies a lot between seeds (one run built a crane instead of a beam).
+
+### What does the prompt rewriter do?
+A Qwen3.5-9B with a long system prompt from the template turns your request into one detailed paragraph describing the finished image, then the image model renders that. It's a switch in the template (off by default) and `--enhance` in `qwen_image.py`, which prints the rewritten prompt. Good for rough ideas; costs ~55 s per image on a 4090.
+
+### How does editing work?
+Same image model and encoder, plus the input image: the encoder sees the image and the instruction, and the model redraws only what the instruction asks for. "Add a green tractor beam from the big saucer" kept every alien, saucer and the Taj Mahal and added the beam. Fix a picture with a sentence instead of rerolling it.
 
 ## Gotchas
 

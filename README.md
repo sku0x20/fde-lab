@@ -34,8 +34,9 @@ Later, maybe: native chat apps for phone or desktop. Skipped for now in favour o
 | `infra/comfyui/` | OpenTofu config: a RunPod pod running ComfyUI, reached over an SSH tunnel |
 | `webui/compose.yaml` | Open WebUI on the laptop, pointed at the vLLM pod |
 | `scripts/ssh_config.sh` | Writes `.ssh/config` for a pod, so SSH uses the repo's key and known_hosts |
-| `scripts/comfyui_models.sh` | Downloads Z-Image Turbo onto the volume; run on the ComfyUI pod over SSH |
-| `scripts/comfyui_bench.py` | Times Z-Image Turbo text-to-image runs on ComfyUI through the tunnel |
+| `scripts/comfyui_models.sh` | Downloads Qwen-Image 2.1 Turbo onto the volume; run on the ComfyUI pod over SSH |
+| `scripts/qwen_image.py` | Generates or edits images with Qwen-Image 2.1 Turbo through the tunnel, with timings |
+| `workflows/` | ComfyUI's Qwen-Image 2.1 Turbo templates in API format, for `qwen_image.py` |
 | `scripts/chat_bench.py` | Streams one chat completion and reports TTFT and decode tokens/s |
 | `FAQ.md` | Notes: concepts, decisions and their why, gotchas, measured numbers |
 
@@ -84,12 +85,14 @@ tofu -chdir=infra/comfyui apply
 # writes .ssh/config with the pod's direct SSH host and port; rerun per pod
 scripts/ssh_config.sh comfyui $(tofu -chdir=infra/comfyui output -raw pod_id)
 
-# once per volume: download Z-Image Turbo (~21 GB)
+# once per volume: download Qwen-Image 2.1 Turbo (~36 GB)
 ssh -F .ssh/config comfyui 'bash -s' < scripts/comfyui_models.sh
 
 # tunnel, then open http://localhost:8188
 ssh -F .ssh/config -N -L 8188:localhost:8188 comfyui
-python3 -I scripts/comfyui_bench.py    # in another terminal, with the tunnel up
+# in another terminal, with the tunnel up
+python3 -I scripts/qwen_image.py gen "aliens stealing the Taj Mahal" -n 3 --enhance
+python3 -I scripts/qwen_image.py edit tmp/out/<image>.png "add a green tractor beam"
 
 tofu -chdir=infra/comfyui destroy
 ```
@@ -103,7 +106,13 @@ Qwen3.5-4B (BF16) on vLLM v0.33.0, one RTX 4090, RunPod secure cloud:
 - cold start: ~8 min
 - cost: $0.89/hr
 
-Z-Image Turbo (bf16) on ComfyUI v0.44.0, one RTX 4090, RunPod secure cloud:
+Qwen-Image 2.1 Turbo (int8) on ComfyUI v0.44.0, one RTX 4090, RunPod secure cloud:
+
+- ~9.2 s per 1024x1024 image; ~64 s with the prompt rewriter on
+- ~12 s per edit
+- first image after boot: ~75 s, loading the weights from the network volume
+
+Z-Image Turbo (bf16), same setup, since replaced by Qwen:
 
 - ~5.0 s per 1024x1024 image (8 steps)
 - first image after boot: ~75 s, loading the weights from the network volume

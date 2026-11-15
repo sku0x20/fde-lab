@@ -339,6 +339,15 @@ Yes. RunPod's HTTP proxy (host `<pod id>-8000.proxy.runpod.net`) is open to the 
 ### What did the session cost?
 $0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a secure 4090 at $0.89/hr. The balance lags: it showed $0.13 spent at teardown and settled a few minutes later.
 
+### How do I prompt Z-Image Turbo?
+- Full sentences, not keyword lists: its text encoder is an LLM (Qwen3-4B).
+- It draws where you put things, literally. "Aliens on the platform" gives aliens on the ground, not in the ship.
+- Describe what the scene looks like, not what's happening. "Lifting the Taj Mahal" left it on the ground; "open blue sky under it, its torn-off bottom of earth and roots, an empty crater below" got it floating.
+- Famous landmarks pull toward their postcard pose. Expect to fight for anything that breaks it.
+- No negative prompt: at cfg 1 it's ignored.
+- Generate 3-4 per prompt (~5 s each) and keep the best; about half follow a hard prompt.
+- Small figures lose detail: a gesture on a tiny alien won't read. Make the subject bigger in frame, or do a close-up.
+
 ## First ComfyUI deploy: Z-Image Turbo
 
 Setup for every number below: Z-Image Turbo (bf16 weights, `qwen_3_4b` text encoder) on ComfyUI v0.44.0 (`runpod/comfyui:2.2.0-comfyuiv0.44.0-cuda12.8`, PyTorch 2.10.0+cu128), one RTX 4090 (24 GB), RunPod secure cloud EU-RO-1, weights on a STANDARD network volume, 2026-11-15.

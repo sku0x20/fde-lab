@@ -103,11 +103,11 @@ Qwen3.5-4B (BF16) on vLLM v0.33.0, one RTX 4090, RunPod secure cloud:
 - cold start: ~8 min
 - cost: $0.89/hr
 
-`FAQ.md` has the full numbers and how they were measured.
-
 Z-Image Turbo (bf16) on ComfyUI v0.44.0, one RTX 4090, RunPod secure cloud:
 
 - ~5.0 s per 1024x1024 image (8 steps)
 - first image after boot: ~75 s, loading the weights from the network volume
 - cold start: ~6 min to serving; first boot on a new volume adds ~5 min of model download
 - cost: $0.89/hr for the pod, plus ~$3.50/month for the 50 GB volume
+
+`FAQ.md` has the full numbers and how they were measured.

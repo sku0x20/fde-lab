@@ -16,12 +16,15 @@ resource "runpod_pod" "vllm" {
   cloud            = "COMMUNITY"
   min_cuda_version = "13.0" # hosts with older drivers can't run a CUDA 13.0 image
 
-  # ephemeral: holds the Hugging Face download (~9.4 GB), gone on destroy
-  disk = 40
+  # ephemeral, gone on destroy. Holds the Hugging Face download (~9.4 GB); headroom in case
+  # the unpacked image (~10 GB compressed) also counts against it
+  disk = 60
 
+  # a plain string becomes the container's cmd; the image's entrypoint (`vllm serve`) stays.
+  # --host 0.0.0.0: reachable by RunPod's proxy, not just localhost
   # --max-model-len: the 262K default would reserve far more KV cache than 24 GB allows
   # --reasoning-parser: splits Qwen3.5's <think> block into reasoning_content
-  args = "Qwen/Qwen3.5-4B --port 8000 --max-model-len 32768 --reasoning-parser qwen3"
+  args = "Qwen/Qwen3.5-4B --host 0.0.0.0 --port 8000 --max-model-len 32768 --reasoning-parser qwen3"
 
   env = {
     VLLM_API_KEY = random_password.vllm_api_key.result

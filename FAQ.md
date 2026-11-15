@@ -356,6 +356,12 @@ Two current ones (Nov 2026) use the same weights for text-to-image and editing, 
 - FLUX.3 klein: Qwen3-VL-4B text encoder, smaller and faster. ~24 GB with the base model for edits. License `flux-kommunity-license`, gated on Hugging Face (needs a token).
 Published comparisons are small self-run tests and split between them, so test on your own prompts.
 
+### What's a LoRA?
+A small add-on file (Low-Rank Adaptation) that adjusts a base model without replacing it: a style, a character, a concept, or fewer steps (speed LoRAs). It holds two thin matrices per layer, and their product is added to the frozen weights, so it's tens to hundreds of MB, not GBs, and cheap to train.
+- It fits only the base model it was trained on: a Qwen-Image LoRA won't load on FLUX.
+- In ComfyUI: the file goes in `models/loras/`, and a `LoraLoaderModelOnly` node sits between the model loader and the sampler, with a strength (around 0.5-1.0). A template that uses a LoRA needs that file too.
+- LLMs have them as well: vLLM can serve several LoRAs on one base model (`--enable-lora`), picked per request by model name.
+
 ### How do I prompt Z-Image Turbo?
 - Full sentences, not keyword lists: its text encoder is an LLM (Qwen3-4B).
 - It draws where you put things, literally. "Aliens on the platform" gives aliens on the ground, not in the ship.

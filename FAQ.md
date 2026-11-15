@@ -96,5 +96,21 @@ A base model trained further to follow instructions and chat:
 
 Instruct models ship a **chat template**: special tokens marking the system, user and assistant turns. vLLM applies it on `/v1/chat/completions`. A missing or wrong template is a common cause of rambling output. Serve instruct models; use base models as a starting point for fine-tuning.
 
+### Which current models fit one GPU?
+Hugging Face, 2026-11-15. All Apache 2.0, ungated, supported by vLLM v0.33.0:
+
+| Model | Params | BF16 weights | Notes |
+|---|---|---|---|
+| Qwen3.5-4B | 4.7B | ~9.4 GB | text and image; thinking on by default |
+| Qwen3.5-9B | 9.7B | ~19.4 GB | needs a 48 GB GPU |
+| Gemma 4 E4B-it | 8.0B (~4B effective) | ~16 GB | text, image, audio |
+| Granite 4.2 8B | 8.8B | ~17.6 GB | text only, enterprise-focused, little community use |
+| Qwen3-8B | 8.2B | ~16.4 GB | older, text only, widely used with vLLM |
+
+BF16 weights take about 2 bytes per parameter. The GPU also needs room for the KV cache and the runtime, so the weights should take well under the GPU's memory.
+
+### Why Qwen3.5-4B first?
+Its weights take ~9.4 GB of a 24 GB GPU, leaving plenty for the KV cache, and the family is the most-used of its generation. Qwen3.5 thinks before answering by default (`<think>...</think>`); turn that off per request for direct answers.
+
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.

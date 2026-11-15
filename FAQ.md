@@ -150,6 +150,30 @@ For daily coding, no reason. Claude Code is tuned for Claude models. The others 
 ### Where does the frontend run?
 A RunPod pod runs one container, so the frontend can't share the vLLM pod without a custom image. The options are a separate CPU pod (fits the IaC, costs a little per hour), the laptop, or a free host for a small custom app. A server-side frontend keeps the vLLM key off the browser.
 
+## Image and video generation
+
+### Can the current setup generate images?
+No. Qwen3.5-4B takes images as input (understanding) but outputs only text. Generating images or video takes a different kind of model, diffusion, and usually a different runtime, API and frontend.
+
+### What changes compared to serving an LLM?
+| | LLM (now) | Image / video diffusion |
+|---|---|---|
+| How it generates | one token at a time, streamed | refines the whole image (or clip) from noise over 20–50 steps |
+| Bottleneck | memory bandwidth (decode) | compute |
+| GPU memory | weights + KV cache | weights + text encoder + VAE; no KV cache. Video is the tightest fit |
+| Batching | continuous, big throughput win | helps less |
+| Metrics | TTFT, tokens/s | seconds per image, minutes per video clip |
+| API shape | request/response, streamed | long-running jobs: submit, poll, fetch a file. Outputs need storage |
+| Runtime | vLLM | ComfyUI (de facto standard, node graphs, has its own UI and API) or diffusers (a Python library; write your own server) |
+| Frontend | chat app or harness | ComfyUI's UI, or Open WebUI with ComfyUI as its image backend |
+| Licenses | mostly Apache 2.0 | mixed; some popular weights are non-commercial, which matters for customers |
+
+### Where do harnesses fit?
+An agent doesn't generate images itself. It calls an image model as a tool, for example through an MCP server in front of ComfyUI. The LLM plans and writes the prompt; the diffusion model draws.
+
+### What fits RunPod for this?
+Pods work the same way. Long jobs with idle time between them fit RunPod serverless better (submit a job, pay per second of run). ComfyUI setups depend on custom nodes and model files in exact folders, so reproducing one is harder than `vllm serve <model>`; a network volume or a custom image holds them.
+
 ## Tokens
 
 ### What's a token?

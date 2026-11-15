@@ -299,3 +299,6 @@ The proxy rejects urllib's default `User-Agent` (`Python-urllib/...`). Set any o
 
 ### Why keep the image's entrypoint?
 `vllm/vllm-openai` has entrypoint `vllm serve`. A plain-string `args` on `runpod_pod` becomes the container's cmd and keeps that entrypoint, so `args` starts with the model name. To override the entrypoint too, use the JSON form: `{"entrypoint":[...],"cmd":[...]}`.
+
+### Why does every Open WebUI chat fail with `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser`?
+Open WebUI v0.13 defaults to native function calling: each chat attaches its built-in tools (memory, chat search, notes) with `tool_choice: "auto"`. vLLM rejects that unless started with `--enable-auto-tool-choice --tool-call-parser <parser>`; for Qwen3.5 the model card's parser is `qwen3_coder`. The other fix is per model in Open WebUI: set function calling to legacy (prompt-based), which sends no `tools`.

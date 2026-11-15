@@ -135,6 +135,19 @@ Two phases:
 ### Why ~100 tokens/s for one request on a 4090?
 Each decode step reads all the weights from GPU memory. An RTX 4090 moves ~1,000 GB/s and the weights are 9.2 GB (8.56 GiB), so one request tops out at ~110 tok/s (estimate). Measured: 102. Single-stream decode is limited by memory bandwidth, not compute. Batching reuses each read of the weights across many requests, which is where serving throughput comes from.
 
+### How does batching work?
+Many requests share each GPU step. The step is dominated by reading the weights (9.2 GB), so one read can produce the next token for 32 requests nearly as fast as for 1. Total throughput rises many times over; each stream slows only a little.
+
+- **Static batching**: run N requests together and wait for all of them to finish. Short answers idle while long ones finish, and new requests wait for the whole batch.
+- **Continuous batching** (vLLM): the batch is rebuilt at every token step. A finished request leaves straight away and a waiting one takes its slot, so the GPU stays full.
+- **Chunked prefill**: a long new prompt is split into chunks mixed into decode steps, so it doesn't stall everyone else's streaming.
+
+Limits:
+- KV cache memory: every request in flight holds its own cache. When it fills, vLLM queues or pauses requests.
+- compute: at large batches the GPU becomes compute-bound, so total throughput levels off and each stream slows down.
+- `--max-num-seqs`: a cap on requests running at once.
+- latency: bigger batches give more total tok/s but slower per-user streaming and higher TTFT. Tuning that balance against a latency target is core deployment work.
+
 ### What's TTFT?
 Time to first token: network + queueing + prefill. How long until the reply starts. Decode tok/s is how fast it then streams.
 

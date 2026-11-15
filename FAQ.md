@@ -345,6 +345,12 @@ $0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a s
 - Simple frontends over the same models: SwarmUI (a prompt box over ComfyUI), Fooocus (SDXL only).
 - A model that follows prompts better, or one that edits by instruction (Qwen-Image, Qwen-Image-Edit), so "make them giggle more" is a prompt, not a redo.
 
+### Which image models follow prompts better and also edit?
+Two current ones (Nov 2026) use the same weights for text-to-image and editing, and ship a prompt enhancer: a Qwen3.5-9B that rewrites a rough prompt into a detailed one inside the workflow. ComfyUI v0.44.0 has templates for both.
+- Qwen-Image 2.1 (Turbo for few steps): Qwen3-VL-8B text encoder. ~36 GB for text-to-image plus edit at int8. License `qwen-research`, ungated.
+- FLUX.3 klein: Qwen3-VL-4B text encoder, smaller and faster. ~24 GB with the base model for edits. License `flux-kommunity-license`, gated on Hugging Face (needs a token).
+Published comparisons are small self-run tests and split between them, so test on your own prompts.
+
 ### How do I prompt Z-Image Turbo?
 - Full sentences, not keyword lists: its text encoder is an LLM (Qwen3-4B).
 - It draws where you put things, literally. "Aliens on the platform" gives aliens on the ground, not in the ship.

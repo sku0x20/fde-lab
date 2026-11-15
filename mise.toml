@@ -1,0 +1,4 @@
+[tools]
+opentofu = "1.13.9"
+# not in mise's registry; binary from GitHub releases
+"github:runpod/runpodctl" = "3.1.1"

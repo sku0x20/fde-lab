@@ -6,3 +6,9 @@ models/
 *.bin
 *.onnx
 .DS_Store
+# tofu: provider binaries and state (state can hold secrets); .terraform.lock.hcl is committed
+.terraform/
+*.tfstate
+*.tfstate.*
+# local env, holds RUNPOD_API_KEY
+mise.local.toml

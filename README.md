@@ -35,6 +35,7 @@ Later, maybe: native chat apps for phone or desktop. Skipped for now in favour o
 | `webui/compose.yaml` | Open WebUI on the laptop, pointed at the vLLM pod |
 | `scripts/ssh_config.sh` | Writes `.ssh/config` for a pod, so SSH uses the repo's key and known_hosts |
 | `scripts/comfyui_models.sh` | Downloads Z-Image Turbo onto the volume; run on the ComfyUI pod over SSH |
+| `scripts/comfyui_bench.py` | Times Z-Image Turbo text-to-image runs on ComfyUI through the tunnel |
 | `scripts/chat_bench.py` | Streams one chat completion and reports TTFT and decode tokens/s |
 | `FAQ.md` | Notes: concepts, decisions and their why, gotchas, measured numbers |
 
@@ -88,6 +89,7 @@ ssh -F .ssh/config comfyui 'bash -s' < scripts/comfyui_models.sh
 
 # tunnel, then open http://localhost:8188
 ssh -F .ssh/config -N -L 8188:localhost:8188 comfyui
+python3 -I scripts/comfyui_bench.py    # in another terminal, with the tunnel up
 
 tofu -chdir=infra/comfyui destroy
 ```
@@ -102,3 +104,10 @@ Qwen3.5-4B (BF16) on vLLM v0.33.0, one RTX 4090, RunPod secure cloud:
 - cost: $0.89/hr
 
 `FAQ.md` has the full numbers and how they were measured.
+
+Z-Image Turbo (bf16) on ComfyUI v0.44.0, one RTX 4090, RunPod secure cloud:
+
+- ~5.0 s per 1024x1024 image (8 steps)
+- first image after boot: ~75 s, loading the weights from the network volume
+- cold start: ~6 min to serving; first boot on a new volume adds ~5 min of model download
+- cost: $0.89/hr for the pod, plus ~$3.50/month for the 50 GB volume

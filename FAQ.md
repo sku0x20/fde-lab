@@ -339,6 +339,25 @@ Yes. RunPod's HTTP proxy (host `<pod id>-8000.proxy.runpod.net`) is open to the 
 ### What did the session cost?
 $0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a secure 4090 at $0.89/hr. The balance lags: it showed $0.13 spent at teardown and settled a few minutes later.
 
+## First ComfyUI deploy: Z-Image Turbo
+
+Setup for every number below: Z-Image Turbo (bf16 weights, `qwen_3_4b` text encoder) on ComfyUI v0.44.0 (`runpod/comfyui:2.2.0-comfyuiv0.44.0-cuda12.8`, PyTorch 2.10.0+cu128), one RTX 4090 (24 GB), RunPod secure cloud EU-RO-1, weights on a STANDARD network volume, 2026-11-15.
+
+### How fast is it?
+- ~4.96 s per 1024x1024 image, 8 steps (3 runs: 4.98, 4.95, 4.96), measured with `scripts/comfyui_bench.py` through the SSH tunnel.
+- First image after boot: 75.45 s, almost all of it loading ~20.7 GB of weights from the network volume.
+- At $0.89/hr that's about $0.0012 per image while busy (estimate from the steady-state time).
+
+### How long is a cold start?
+- `tofu apply` to ComfyUI serving: ~6 min (17:56:14 to 18:02:19), mostly the image pull (~5.4 GB compressed). `start.sh` itself reported ready 55 s after it started, including the first-boot copy of ComfyUI onto the volume.
+- First boot on a new volume adds the model download: 20.7 GB from Hugging Face in 317 s, ~65 MB/s.
+
+### Where does the GPU memory go?
+20.1 GB of 24 GB used after the runs: the 12.3 GB diffusion model plus what's left of the 8 GB text encoder and the VAE. ComfyUI moves models on and off the GPU as needed, so this isn't a fixed reservation like vLLM's KV cache.
+
+### What is the network volume underneath?
+A MooseFS mount (`mfs#euro-2.runpod.net`) at `/workspace`, shared with other tenants (2.1 PB filesystem). The 50 GB size is a quota, not a disk.
+
 ## Gotchas
 
 ### Why did vLLM fail with "CUDA unknown error"?
@@ -352,3 +371,9 @@ The proxy rejects urllib's default `User-Agent` (`Python-urllib/...`). Set any o
 
 ### Why does every Open WebUI chat fail with `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser`?
 Open WebUI v0.13 defaults to native function calling: each chat attaches its built-in tools (memory, chat search, notes) with `tool_choice: "auto"`. vLLM rejects that unless started with `--enable-auto-tool-choice --tool-call-parser <parser>`; for Qwen3.5 the model card's parser is `qwen3_coder`. The other fix is per model in Open WebUI: set function calling to legacy (prompt-based), which sends no `tools`. Changing `args` updates the pod in place (same id and URL); vLLM was back 2.5 min later, the image already on the host.
+
+### Why did the ComfyUI pod fail with "There are no longer any instances available"?
+The network volume pinned it to US-NC-1, which had no free RTX 4090 that hour. The volume was still empty, so it moved to EU-RO-1 (changing `data_center` replaces it). Once it holds weights, moving means downloading them again. Check stock first: `runpodctl datacenter list`.
+
+### Why is `runpodctl ssh info` empty on a running pod?
+It said "no container reported yet" minutes after ComfyUI was serving. `runpodctl pod get` already had the direct IP and port under `ssh`, so `scripts/ssh_config.sh` reads that instead.

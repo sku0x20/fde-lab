@@ -230,10 +230,10 @@ ComfyUI has no auth: anyone who reaches port 8188 can use the GPU. The `runpod/c
 ```sh
 ssh -F .ssh/config -N -L 8188:localhost:8188 comfyui
 ```
-Use the direct host and port from `runpodctl ssh info`. RunPod's SSH proxy gives a shell only, no port forwarding.
+It needs the direct connection (public IP and the port mapped to 22/tcp), which `scripts/ssh_config.sh` reads from `runpodctl pod get`. RunPod's SSH proxy gives a shell only, no port forwarding.
 
 ### Why a `.ssh/` in the repo?
-To keep the lab out of `~/.ssh`. The key, the config and known_hosts all live in the gitignored `.ssh/`, and `ssh -F .ssh/config` reads only that config. `scripts/ssh_config.sh` writes it with absolute paths, `IdentitiesOnly` (offer only this key) and `StrictHostKeyChecking accept-new`, since every pod is a new host. It also drops a stale known_hosts entry when a new pod reuses an old host:port.
+To keep the lab out of `~/.ssh`. The key, the config and known_hosts all live in the gitignored `.ssh/`, and `ssh -F .ssh/config` reads only that config. `scripts/ssh_config.sh <name> <pod id>` writes it with absolute paths, `IdentitiesOnly` (offer only this key) and `StrictHostKeyChecking accept-new`, since every pod is a new host. It also drops a stale known_hosts entry when a new pod reuses an old host:port.
 
 ### Why does ComfyUI need `comfyui_models.sh`?
 The image ships no models and has no setting to preload any. The other ways in are worse:

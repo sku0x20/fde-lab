@@ -80,9 +80,8 @@ SSH uses the repo's gitignored `.ssh/` (key, config, known_hosts), never `~/.ssh
 mkdir -m 700 .ssh && ssh-keygen -t ed25519 -f .ssh/runpod_ed25519    # once
 tofu -chdir=infra/comfyui apply
 
-# direct SSH host and port (not the proxy one: it can't forward ports)
-runpodctl ssh info $(tofu -chdir=infra/comfyui output -raw pod_id)
-scripts/ssh_config.sh comfyui <host> <port>    # writes .ssh/config; rerun per pod
+# writes .ssh/config with the pod's direct SSH host and port; rerun per pod
+scripts/ssh_config.sh comfyui $(tofu -chdir=infra/comfyui output -raw pod_id)
 
 # once per volume: download Z-Image Turbo (~21 GB)
 ssh -F .ssh/config comfyui 'bash -s' < scripts/comfyui_models.sh

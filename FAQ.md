@@ -411,6 +411,12 @@ A Qwen3.5-9B with a long system prompt from the template turns your request into
 ### How does editing work?
 Same image model and encoder, plus the input image: the encoder sees the image and the instruction, and the model redraws only what the instruction asks for. "Add a green tractor beam from the big saucer" kept every alien, saucer and the Taj Mahal and added the beam. Fix a picture with a sentence instead of rerolling it.
 
+### What does a rough prompt plus the rewriter give?
+A keeper on the first try, from the ComfyUI UI (t2i template, rewriter on, 1:1 at 0.5 MP = 736x736, 8 steps):
+> a detailed poster for a gaming event. neon lights, car zooming past like its about to come out of the poster. and a guy with vr headset. neon themed. and the poster itself is in a poster. like a post stick to the build in cyberpunk styled building. city theme.
+
+It got all of it: a taped-up poster on a pillar in a rainy neon city, a man in a VR headset pointing at it, a car bursting out in light streaks. It invented a title ("NEON NIGHTMARE") and layout. Big text came out clean; small text (taglines, URLs, icon labels) is mostly garbled. To reproduce, the PNG carries the full graph in its metadata (drag it into ComfyUI): noise seed 715006840567256, rewriter seed 447606998181262. The rewriter samples at temperature 1.0, so a different rewriter seed gives a different scene.
+
 ## Gotchas
 
 ### Why did vLLM fail with "CUDA unknown error"?

@@ -5,6 +5,7 @@ A personal lab for forward deployed engineer (FDE) skills: taking models and AI 
 ## Scope
 
 - Deployment first: running and serving models on cloud infra. Nothing runs locally. Development (building on top of models) comes later.
+- Cloud: RunPod to start (2026-11-15). Hyperscalers may come later.
 - Separate from `../gke-lab` by choice. Reuse what it teaches; don't merge them.
 - Scope beyond that isn't set. The user sets the direction and designs the lab; propose options, don't pick them.
 

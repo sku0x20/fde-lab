@@ -115,7 +115,7 @@ Its weights take ~9.4 GB of a 24 GB GPU, leaving plenty for the KV cache, and th
 ### How big is the vLLM image?
 `vllm/vllm-openai:v0.33.0` for amd64 is 9.7 GB compressed, 7.7 GB for the `-x86_64-zstd` tag (Docker Hub). Unpacked it's about 20 GB (estimate). Most of it is CUDA libraries, PyTorch, and kernels for every GPU generation.
 
-It sets the cold start: a host with the image cached started the container in 6 s; a fresh RunPod secure host was still pulling it after 3 min.
+It sets the cold start: a host with the image cached started the container in 6 s; a fresh RunPod secure host took ~4 min 50 s to pull it.
 
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.
@@ -134,7 +134,7 @@ Measured with `scripts/chat_bench.py` (streamed, one request at a time, ~31-toke
 | thinking off | 366 | 1.09 s | 102.6 tok/s |
 | thinking on | 1500 (hit limit) | 0.99 s | 101.3 tok/s |
 
-vLLM's own log agreed: 101.2 tok/s in a fully busy 10 s window. Most of TTFT is network: a plain `GET /v1/models` round trip through RunPod's proxy took ~0.4 s from India. With thinking on, all 1500 tokens went to reasoning and no answer came back: thinking needs a much larger `max_tokens`.
+vLLM's own log agreed: 101.2 tok/s in a fully busy 10 s window. TTFT was ~1.0 s from India through RunPod's proxy. A plain `GET /v1/models` round trip took ~0.4 s of that; a 31-token prefill takes milliseconds, so the rest is likely proxy overhead (unverified). With thinking on, all 1500 tokens went to reasoning and no answer came back: thinking needs a much larger `max_tokens`.
 
 ### Where does the GPU memory go?
 From vLLM's startup log:
@@ -159,10 +159,10 @@ About 8 min from `tofu apply` to the first `200`, on a host without the image ca
 On a host with the image cached, the container started 6 s after apply. The image pull is the part to attack first: a smaller image, a host with it cached, or a network volume holding the weights.
 
 ### Is the endpoint public?
-Yes. RunPod's HTTP proxy (`https://<pod id>-8000.proxy.runpod.net`) is open to the internet. vLLM's `VLLM_API_KEY` env var enforces a bearer key: no key or a wrong key returns 401.
+Yes. RunPod's HTTP proxy (host `<pod id>-8000.proxy.runpod.net`) is open to the internet. vLLM's `VLLM_API_KEY` env var enforces a bearer key: no key or a wrong key returns 401.
 
 ### What did the session cost?
-$0.13 in all: two attempts on a broken community host, then ~10 min on a secure 4090 at $0.89/hr.
+$0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a secure 4090 at $0.89/hr. The balance lags: it showed $0.13 spent at teardown and settled a few minutes later.
 
 ## Gotchas
 

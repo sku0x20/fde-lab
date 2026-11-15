@@ -13,8 +13,8 @@ resource "runpod_pod" "vllm" {
 
   gpu_type_id      = "NVIDIA GeForce RTX 4090"
   gpu_count        = 1
-  # community kept landing on one host whose GPU failed CUDA init; few community 4090s
-  # have CUDA 13.0 drivers, so there was nowhere else to go
+  # community kept landing on one host whose GPU failed CUDA init, likely because few
+  # community 4090s have CUDA 13.0 drivers
   cloud            = "SECURE"
   min_cuda_version = "13.0" # hosts with older drivers can't run a CUDA 13.0 image
 

@@ -2,6 +2,8 @@
 #   VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) \
 #   VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) \
 #   docker compose -f webui/compose.yaml up -d
+# stop: `docker compose -p webui down` (with -f, down also demands VLLM_URL and VLLM_KEY);
+# the open-webui volume keeps accounts and chats
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.13.3

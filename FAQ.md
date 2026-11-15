@@ -162,7 +162,7 @@ VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) \
 VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) \
 docker compose -f webui/compose.yaml up -d
 ```
-Then open `localhost:3000`. The first account to sign up becomes admin; users and chats live in the `open-webui` Docker volume, on the laptop. `ENABLE_PERSISTENT_CONFIG=false` matters: otherwise Open WebUI saves the vLLM URL to its database on first start and ignores the env var after, and the URL changes with every new pod.
+Then open `localhost:3000`. Stop it with `docker compose -p webui down`: with `-f`, compose demands `VLLM_URL` and `VLLM_KEY` even to stop. The first account to sign up becomes admin; users and chats live in the `open-webui` Docker volume, on the laptop. `ENABLE_PERSISTENT_CONFIG=false` matters: otherwise Open WebUI saves the vLLM URL to its database on first start and ignores the env var after, and the URL changes with every new pod.
 
 ### How big is Open WebUI, and how long does it take to start?
 `ghcr.io/open-webui/open-webui:v0.13.3`: 1.49 GB download, 5.83 GB on disk; pulled in 4.5 min. First start took 2 min 17 s, mostly downloading two embedding models (~920 MB) into the volume; later starts skip that.

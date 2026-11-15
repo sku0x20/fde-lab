@@ -110,7 +110,67 @@ Hugging Face, 2026-11-15. All Apache 2.0, ungated, supported by vLLM v0.33.0:
 BF16 weights take about 2 bytes per parameter. The GPU also needs room for the KV cache and the runtime, so the weights should take well under the GPU's memory.
 
 ### Why Qwen3.5-4B first?
-Its weights take ~9.4 GB of a 24 GB GPU, leaving plenty for the KV cache, and the family is the most-used of its generation. Qwen3.5 thinks before answering by default (`<think>...</think>`); turn that off per request for direct answers.
+Its weights take ~9.4 GB of a 24 GB GPU, leaving plenty for the KV cache, and the family is the most-used of its generation. The Hugging Face download is 9.34 GB: two safetensors files (5.33 + 3.99 GB), including the vision encoder. A fresh host pulls ~19 GB in total, image plus model. Qwen3.5 thinks before answering by default (`<think>...</think>`); turn that off per request for direct answers.
+
+### How big is the vLLM image?
+`vllm/vllm-openai:v0.33.0` for amd64 is 9.7 GB compressed, 7.7 GB for the `-x86_64-zstd` tag (Docker Hub). Unpacked it's about 20 GB (estimate). Most of it is CUDA libraries, PyTorch, and kernels for every GPU generation.
+
+It sets the cold start: a host with the image cached started the container in 6 s; a fresh RunPod secure host was still pulling it after 3 min.
 
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.
+
+## First deploy: Qwen3.5-4B on vLLM
+
+Setup for every number below: Qwen/Qwen3.5-4B, BF16, vLLM v0.33.0, one RTX 4090 (24 GB), RunPod secure cloud (US-NC-1, host CUDA 13.2), `--max-model-len 32768`, 2026-11-15.
+
+### How fast is it?
+Measured with `scripts/chat_bench.py` (streamed, one request at a time, ~31-token prompt):
+
+| Run | Completion tokens | TTFT | Decode |
+|---|---|---|---|
+| thinking off | 390 | 1.34 s | 102.6 tok/s |
+| thinking off | 355 | 1.01 s | 102.5 tok/s |
+| thinking off | 366 | 1.09 s | 102.6 tok/s |
+| thinking on | 1500 (hit limit) | 0.99 s | 101.3 tok/s |
+
+vLLM's own log agreed: 101.2 tok/s in a fully busy 10 s window. Most of TTFT is network: a plain `GET /v1/models` round trip through RunPod's proxy took ~0.4 s from India. With thinking on, all 1500 tokens went to reasoning and no answer came back: thinking needs a much larger `max_tokens`.
+
+### Where does the GPU memory go?
+From vLLM's startup log:
+- visible: 23.52 GiB; vLLM's target at the default `--gpu-memory-utilization 0.92`: 21.64 GiB
+- weights: 8.56 GiB
+- CUDA graphs: 0.24 GiB
+- KV cache: 10.69 GiB = 314,857 tokens, enough for 9.6 requests at the full 32K context
+
+Qwen3.5 mixes linear attention (Mamba-style state) with regular attention, so its KV cache per token is small.
+
+### How long is a cold start?
+About 8 min from `tofu apply` to the first `200`, on a host without the image cached:
+
+| Step | Time |
+|---|---|
+| pod created | 1 s |
+| image pull (9.7 GB) | ~4 min 50 s |
+| model download (9.34 GB) and load to GPU | ~1 min (load alone 14.5 s) |
+| `torch.compile` | 20.3 s |
+| CUDA graph capture, KV cache setup, warmup | ~1.5 min (engine init total 119 s) |
+
+On a host with the image cached, the container started 6 s after apply. The image pull is the part to attack first: a smaller image, a host with it cached, or a network volume holding the weights.
+
+### Is the endpoint public?
+Yes. RunPod's HTTP proxy (`https://<pod id>-8000.proxy.runpod.net`) is open to the internet. vLLM's `VLLM_API_KEY` env var enforces a bearer key: no key or a wrong key returns 401.
+
+### What did the session cost?
+$0.13 in all: two attempts on a broken community host, then ~10 min on a secure 4090 at $0.89/hr.
+
+## Gotchas
+
+### Why did vLLM fail with "CUDA unknown error"?
+The host's GPU was broken, not the config. `torch._C._cuda_init()` failed, vLLM's engine never started, and RunPod restarted the container every ~50 s. `tofu apply -replace` landed on the same community host again, likely because few community 4090s had CUDA 13.0 drivers. Secure cloud placed it on a healthy host. Check `runpodctl pod logs <id>` within the first minute, and destroy fast when it loops.
+
+### Why does Python get 403 from RunPod's proxy when curl works?
+The proxy rejects urllib's default `User-Agent` (`Python-urllib/...`). Set any other User-Agent.
+
+### Why keep the image's entrypoint?
+`vllm/vllm-openai` has entrypoint `vllm serve`. A plain-string `args` on `runpod_pod` becomes the container's cmd and keeps that entrypoint, so `args` starts with the model name. To override the entrypoint too, use the JSON form: `{"entrypoint":[...],"cmd":[...]}`.

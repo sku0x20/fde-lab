@@ -430,3 +430,9 @@ The network volume pinned it to US-NC-1, which had no free RTX 4090 that hour. T
 
 ### Why is `runpodctl ssh info` empty on a running pod?
 It said "no container reported yet" minutes after ComfyUI was serving. `runpodctl pod get` already had the direct IP and port under `ssh`, so `scripts/ssh_config.sh` reads that instead.
+
+### Why do some ComfyUI templates say `.safetensors` files are missing?
+Each template names the exact weight files it loads, and the image ships none. The volume holds only the five Qwen-Image 2.1 Turbo int8 files, so only `image_qwen_image_2_1_turbo_t2i` and `_image_edit` open clean. Any other template needs its own files (another model, the non-Turbo or bf16 variant, a LoRA, an upscaler), ~14 GB free on the 50 GB volume. Check what's there:
+```sh
+ssh -F .ssh/config comfyui 'find /workspace/runpod-slim/ComfyUI/models -name "*.safetensors"'
+```

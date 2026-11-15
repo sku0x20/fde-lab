@@ -70,6 +70,12 @@ The provider isn't on the OpenTofu registry, so a bare `runpod/runpod` doesn't r
 ### Why one folder per pod under `infra/`?
 Each folder is its own OpenTofu root with its own state, so `tofu -chdir=infra/vllm destroy` can't touch the ComfyUI pod. One root with on/off variables would work too, but forgetting a `-var` on apply destroys the other pod.
 
+### Why is the volume in its own folder?
+It lives longer than a pod. Pods bill by the hour and come down after each session; the volume bills by the month and keeps the weights, so they download once. It goes down by hand when it won't be needed for a while. The pod roots read its ID and data center from `infra/persistence/terraform.tfstate` (`terraform_remote_state`), so apply it first and destroy it last.
+
+### Why one shared volume instead of one per pod?
+A pod mounts at most one network volume, and the two pods write to different folders (`huggingface/`, `runpod-slim/`), so sharing is safe. One volume means one bill and one data center to keep in mind.
+
 ### What from `infra/` goes into git?
 The `.tf` files and `.terraform.lock.hcl`, which pins provider versions and checksums. These stay out:
 - `*.tfstate`: what tofu last saw of the resources. It can hold secrets in plain text.
@@ -218,6 +224,16 @@ An agent doesn't generate images itself. It calls an image model as a tool, for 
 
 ### What fits RunPod for this?
 Pods work the same way. Long jobs with idle time between them fit RunPod serverless better (submit a job, pay per second of run). ComfyUI setups depend on custom nodes and model files in exact folders, so reproducing one is harder than `vllm serve <model>`; a network volume or a custom image holds them.
+
+### How do I reach ComfyUI, and why a tunnel?
+ComfyUI has no auth: anyone who reaches port 8188 can use the GPU. The `runpod/comfyui` image also runs Jupyter with an empty token and FileBrowser with a default password. So the pod exposes only SSH (key auth via `PUBLIC_KEY`), and the laptop forwards a local port:
+```sh
+ssh -i ~/.ssh/runpod_ed25519 -p <port> -N -L 8188:localhost:8188 root@<host>
+```
+Use the direct host and port from `runpodctl ssh info`. RunPod's SSH proxy gives a shell only, no port forwarding.
+
+### What does Z-Image Turbo need in ComfyUI?
+Three files from `Comfy-Org/Z-Image-Turbo`, ~20.7 GB: `diffusion_models/z_image_turbo_bf16.safetensors` (12.31 GB), `text_encoders/qwen_3_4b.safetensors` (8.04 GB), `vae/ae.safetensors` (0.34 GB). The repo's `nvfp4` variant needs a Blackwell GPU. `scripts/comfyui_models.sh` fetches them.
 
 ## Tokens
 

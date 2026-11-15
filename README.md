@@ -21,22 +21,25 @@ Later, maybe: native chat apps for phone or desktop. Skipped for now in favour o
 ## Stack
 
 - **Cloud:** RunPod
-- **Runtime:** vLLM
-- **Infra as code:** OpenTofu (`infra/`, one folder per pod so each comes up and down on its own), with `runpodctl` for one-off tasks (logs, SSH, file transfer)
+- **Runtimes:** vLLM (LLMs), ComfyUI (images)
+- **Infra as code:** OpenTofu (`infra/`, one folder per pod plus one for the shared volume, each with its own state, so each comes up and down on its own), with `runpodctl` for one-off tasks (logs, SSH, file transfer)
 - **Tool versions:** pinned in `mise.toml`
 
 ## Layout
 
 | Path | What |
 |---|---|
+| `infra/persistence/` | OpenTofu config: the network volume both pods mount at `/workspace`, so weights download once. Outlives the pods |
 | `infra/vllm/` | OpenTofu config: a RunPod pod serving a model with vLLM, its API key and outputs |
+| `infra/comfyui/` | OpenTofu config: a RunPod pod running ComfyUI, reached over an SSH tunnel |
 | `webui/compose.yaml` | Open WebUI on the laptop, pointed at the vLLM pod |
+| `scripts/comfyui_models.sh` | Downloads Z-Image Turbo onto the volume; run on the ComfyUI pod over SSH |
 | `scripts/chat_bench.py` | Streams one chat completion and reports TTFT and decode tokens/s |
 | `FAQ.md` | Notes: concepts, decisions and their why, gotchas, measured numbers |
 
 ## Run it
 
-These steps rent a GPU, so they cost money. A pod bills until you destroy it.
+These steps rent a GPU, so they cost money. A pod bills by the hour until you destroy it; the volume bills by the month until you destroy it.
 
 ```sh
 mise install
@@ -46,7 +49,19 @@ cat > mise.local.toml <<'EOF'
 RUNPOD_API_KEY = "..."
 EOF
 
-tofu -chdir=infra/vllm init
+for d in persistence vllm comfyui; do tofu -chdir=infra/$d init; done
+```
+
+### The volume (first up, last down)
+
+```sh
+tofu -chdir=infra/persistence apply      # 50 GB in US-NC-1, ~$3.50/month
+tofu -chdir=infra/persistence destroy    # deletes the weights; destroy the pods first
+```
+
+### vLLM
+
+```sh
 tofu -chdir=infra/vllm apply      # cold start takes ~8 min, mostly the image pull
 
 VLLM_URL=$(tofu -chdir=infra/vllm output -raw vllm_url) \
@@ -54,6 +69,24 @@ VLLM_KEY=$(tofu -chdir=infra/vllm output -raw vllm_api_key) \
 python3 -I scripts/chat_bench.py
 
 tofu -chdir=infra/vllm destroy    # destroy, don't stop: a stopped pod still bills for disk
+```
+
+### ComfyUI
+
+```sh
+ssh-keygen -t ed25519 -f ~/.ssh/runpod_ed25519    # once; or pass -var ssh_public_key_path=...
+tofu -chdir=infra/comfyui apply
+
+# direct SSH host and port (not the proxy one: it can't forward ports)
+runpodctl ssh info $(tofu -chdir=infra/comfyui output -raw pod_id)
+
+# once per volume: download Z-Image Turbo (~21 GB)
+ssh -i ~/.ssh/runpod_ed25519 -p <port> root@<host> 'bash -s' < scripts/comfyui_models.sh
+
+# tunnel, then open http://localhost:8188
+ssh -i ~/.ssh/runpod_ed25519 -p <port> -N -L 8188:localhost:8188 root@<host>
+
+tofu -chdir=infra/comfyui destroy
 ```
 
 ## Results so far

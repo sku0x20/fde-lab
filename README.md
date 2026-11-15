@@ -56,7 +56,7 @@ for d in persistence vllm comfyui; do tofu -chdir=infra/$d init; done
 ### The volume (first up, last down)
 
 ```sh
-tofu -chdir=infra/persistence apply      # 50 GB in US-NC-1, ~$3.50/month
+tofu -chdir=infra/persistence apply      # 50 GB in EU-RO-1, ~$3.50/month
 tofu -chdir=infra/persistence destroy    # deletes the weights; destroy the pods first
 ```
 

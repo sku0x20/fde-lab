@@ -9,9 +9,10 @@
 resource "runpod_network_volume" "shared" {
   name = "fde-lab-shared"
 
-  # every pod that mounts it must run here. US-NC-1: had RTX 4090s in secure cloud
-  # (first vLLM deploy landed here) and has the S3-compatible API
-  data_center = "US-NC-1"
+  # every pod that mounts it must run here. EU-RO-1: RTX 4090s and 5090s listed in secure
+  # cloud, S3-compatible API, nearer India than the US. US-NC-1 (first vLLM deploy) ran out
+  # of 4090s on 2026-11-15
+  data_center = "EU-RO-1"
 
   # GB. Estimate: Z-Image Turbo ~21 + Qwen3.5-4B ~9.4 + ComfyUI venv several, plus headroom.
   # Can grow, never shrink

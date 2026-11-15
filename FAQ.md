@@ -153,6 +153,17 @@ Yes, once the frontend runs on a server: a container on the laptop isn't reachab
 ### Where does the frontend run?
 A RunPod pod runs one container, so the frontend can't share the vLLM pod without a custom image. The options are a separate CPU pod (fits the IaC, costs a little per hour), the laptop, or a free host for a small custom app. A server-side frontend keeps the vLLM key off the browser.
 
+### How do I run Open WebUI on the laptop?
+```sh
+VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) \
+VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) \
+docker compose -f webui/compose.yaml up -d
+```
+Then open `localhost:3000`. The first account to sign up becomes admin; users and chats live in the `open-webui` Docker volume, on the laptop. `ENABLE_PERSISTENT_CONFIG=false` matters: otherwise Open WebUI saves the vLLM URL to its database on first start and ignores the env var after, and the URL changes with every new pod.
+
+### How big is Open WebUI, and how long does it take to start?
+`ghcr.io/open-webui/open-webui:v0.13.3`: 1.49 GB download, 5.83 GB on disk; pulled in 4.5 min. First start took 2 min 17 s, mostly downloading its RAG embedding model (`all-MiniLM-L6-v2`) into the volume; later starts skip that.
+
 ## Image and video generation
 
 ### Can the current setup generate images?

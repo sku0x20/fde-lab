@@ -30,6 +30,7 @@ Later, maybe: native chat apps for phone or desktop. Skipped for now in favour o
 | Path | What |
 |---|---|
 | `infra/` | OpenTofu config: a RunPod pod serving a model with vLLM, its API key and outputs |
+| `webui/compose.yaml` | Open WebUI on the laptop, pointed at the vLLM pod |
 | `scripts/chat_bench.py` | Streams one chat completion and reports TTFT and decode tokens/s |
 | `FAQ.md` | Notes: concepts, decisions and their why, gotchas, measured numbers |
 

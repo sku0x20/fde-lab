@@ -1,0 +1,21 @@
+# Open WebUI on the laptop, talking to the vLLM pod
+#   VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) \
+#   VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) \
+#   docker compose -f webui/compose.yaml up -d
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.13.3
+    ports:
+      - "127.0.0.1:3000:8080" # laptop only, not the LAN
+    environment:
+      OPENAI_API_BASE_URL: ${VLLM_URL:?set VLLM_URL}
+      OPENAI_API_KEY: ${VLLM_KEY:?set VLLM_KEY}
+      ENABLE_OLLAMA_API: "false" # no Ollama here; skips failing probes
+      # settings otherwise live in its database after first start, so a new pod's URL
+      # (the pod id changes on every apply) would be ignored
+      ENABLE_PERSISTENT_CONFIG: "false"
+    volumes:
+      - open-webui:/app/backend/data # users, chats
+
+volumes:
+  open-webui:

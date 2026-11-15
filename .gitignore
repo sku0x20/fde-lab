@@ -1,0 +1,7 @@
+tmp/
+.config/
+models/
+*.gguf
+*.safetensors
+*.bin
+*.onnx

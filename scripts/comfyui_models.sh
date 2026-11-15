@@ -3,7 +3,7 @@
 # Runs on the ComfyUI pod, once per volume; files already there are skipped.
 #
 # usage, from the laptop (after start.sh has copied ComfyUI to /workspace/runpod-slim):
-#   ssh -p <port> root@<host> 'bash -s' < scripts/comfyui_models.sh
+#   ssh -F .ssh/config comfyui 'bash -s' < scripts/comfyui_models.sh
 set -euo pipefail
 
 models=/workspace/runpod-slim/ComfyUI/models

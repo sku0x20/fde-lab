@@ -33,6 +33,7 @@ Later, maybe: native chat apps for phone or desktop. Skipped for now in favour o
 | `infra/vllm/` | OpenTofu config: a RunPod pod serving a model with vLLM, its API key and outputs |
 | `infra/comfyui/` | OpenTofu config: a RunPod pod running ComfyUI, reached over an SSH tunnel |
 | `webui/compose.yaml` | Open WebUI on the laptop, pointed at the vLLM pod |
+| `scripts/ssh_config.sh` | Writes `.ssh/config` for a pod, so SSH uses the repo's key and known_hosts |
 | `scripts/comfyui_models.sh` | Downloads Z-Image Turbo onto the volume; run on the ComfyUI pod over SSH |
 | `scripts/chat_bench.py` | Streams one chat completion and reports TTFT and decode tokens/s |
 | `FAQ.md` | Notes: concepts, decisions and their why, gotchas, measured numbers |
@@ -73,18 +74,21 @@ tofu -chdir=infra/vllm destroy    # destroy, don't stop: a stopped pod still bil
 
 ### ComfyUI
 
+SSH uses the repo's gitignored `.ssh/` (key, config, known_hosts), never `~/.ssh`.
+
 ```sh
-ssh-keygen -t ed25519 -f ~/.ssh/runpod_ed25519    # once; or pass -var ssh_public_key_path=...
+mkdir -m 700 .ssh && ssh-keygen -t ed25519 -f .ssh/runpod_ed25519    # once
 tofu -chdir=infra/comfyui apply
 
 # direct SSH host and port (not the proxy one: it can't forward ports)
 runpodctl ssh info $(tofu -chdir=infra/comfyui output -raw pod_id)
+scripts/ssh_config.sh comfyui <host> <port>    # writes .ssh/config; rerun per pod
 
 # once per volume: download Z-Image Turbo (~21 GB)
-ssh -i ~/.ssh/runpod_ed25519 -p <port> root@<host> 'bash -s' < scripts/comfyui_models.sh
+ssh -F .ssh/config comfyui 'bash -s' < scripts/comfyui_models.sh
 
 # tunnel, then open http://localhost:8188
-ssh -i ~/.ssh/runpod_ed25519 -p <port> -N -L 8188:localhost:8188 root@<host>
+ssh -F .ssh/config -N -L 8188:localhost:8188 comfyui
 
 tofu -chdir=infra/comfyui destroy
 ```

@@ -10,5 +10,7 @@ models/
 .terraform/
 *.tfstate
 *.tfstate.*
+# SSH key, config and known_hosts for the pods, kept out of ~/.ssh
+.ssh/
 # local env, holds RUNPOD_API_KEY
 mise.local.toml

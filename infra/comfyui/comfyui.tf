@@ -2,9 +2,13 @@
 # Reached only over an SSH tunnel: ComfyUI has no auth, so its port stays off the public proxy.
 
 variable "ssh_public_key_path" {
-  description = "Public key allowed to SSH in as root"
+  description = "Public key allowed to SSH in as root. Default: the repo's gitignored .ssh/runpod_ed25519.pub"
   type        = string
-  default     = "~/.ssh/runpod_ed25519.pub"
+  default     = null
+}
+
+locals {
+  ssh_public_key_path = coalesce(var.ssh_public_key_path, "${path.module}/../../.ssh/runpod_ed25519.pub")
 }
 
 resource "runpod_pod" "comfyui" {
@@ -32,7 +36,7 @@ resource "runpod_pod" "comfyui" {
   env = {
     # start.sh adds it to root's authorized_keys. Without it, start.sh sets a random root
     # password (printed in the logs) and sshd accepts passwords
-    PUBLIC_KEY = trimspace(file(pathexpand(var.ssh_public_key_path)))
+    PUBLIC_KEY = trimspace(file(pathexpand(local.ssh_public_key_path)))
   }
 
   # SSH only. 8188 (ComfyUI, no auth), 8888 (Jupyter, empty token) and 8080 (FileBrowser,

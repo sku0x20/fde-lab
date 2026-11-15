@@ -228,9 +228,19 @@ Pods work the same way. Long jobs with idle time between them fit RunPod serverl
 ### How do I reach ComfyUI, and why a tunnel?
 ComfyUI has no auth: anyone who reaches port 8188 can use the GPU. The `runpod/comfyui` image also runs Jupyter with an empty token and FileBrowser with a default password. So the pod exposes only SSH (key auth via `PUBLIC_KEY`), and the laptop forwards a local port:
 ```sh
-ssh -i ~/.ssh/runpod_ed25519 -p <port> -N -L 8188:localhost:8188 root@<host>
+ssh -F .ssh/config -N -L 8188:localhost:8188 comfyui
 ```
 Use the direct host and port from `runpodctl ssh info`. RunPod's SSH proxy gives a shell only, no port forwarding.
+
+### Why a `.ssh/` in the repo?
+To keep the lab out of `~/.ssh`. The key, the config and known_hosts all live in the gitignored `.ssh/`, and `ssh -F .ssh/config` reads only that config. `scripts/ssh_config.sh` writes it with absolute paths, `IdentitiesOnly` (offer only this key) and `StrictHostKeyChecking accept-new`, since every pod is a new host. It also drops a stale known_hosts entry when a new pod reuses an old host:port.
+
+### Why does ComfyUI need `comfyui_models.sh`?
+The image ships no models and has no setting to preload any. The other ways in are worse:
+- ComfyUI-Manager's model downloader: clicks in the UI, not repeatable.
+- The volume's S3 API from the laptop: the ~21 GB would cross the laptop's link twice.
+- Tofu: it can't run commands in a pod, and overriding the start command would replace the image's `start.sh`.
+The script runs on the pod, so it downloads at data center speed, and it skips files already there. With the weights on the volume, it runs once per volume, not per pod.
 
 ### What does Z-Image Turbo need in ComfyUI?
 Three files from `Comfy-Org/Z-Image-Turbo`, ~20.7 GB: `diffusion_models/z_image_turbo_bf16.safetensors` (12.31 GB), `text_encoders/qwen_3_4b.safetensors` (8.04 GB), `vae/ae.safetensors` (0.34 GB). The repo's `nvfp4` variant needs a Blackwell GPU. `scripts/comfyui_models.sh` fetches them.

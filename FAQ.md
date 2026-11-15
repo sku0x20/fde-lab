@@ -89,5 +89,12 @@ The weights are the app; the runtime is the app server. The same model can be 2â
 - **llama.cpp server**: lighter, runs GGUF quantized models, less common in enterprise.
 - **SGLang, TGI**: alternatives to vLLM, worth comparing later.
 
+### What's an instruct model?
+A base model trained further to follow instructions and chat:
+- **Base**: trained only to predict the next token. Asked a question, it may continue the text instead of answering.
+- **Instruct/chat**: the base model further trained on instruction-answer examples and human preferences. It answers, follows the requested format, and stops when done. Names often end in `-Instruct` or `-it`.
+
+Instruct models ship a **chat template**: special tokens marking the system, user and assistant turns. vLLM applies it on `/v1/chat/completions`. A missing or wrong template is a common cause of rambling output. Serve instruct models; use base models as a starting point for fine-tuning.
+
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.

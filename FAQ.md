@@ -347,6 +347,7 @@ $0.19 in all: ~8 min on a broken community host at $0.34/hr, then ~10 min on a s
 - No negative prompt: at cfg 1 it's ignored.
 - Generate 3-4 per prompt (~5 s each) and keep the best; about half follow a hard prompt.
 - Small figures lose detail: a gesture on a tiny alien won't read. Make the subject bigger in frame, or do a close-up.
+- Stock phrases can summon a famous character. "Goofy little green aliens in a flying saucer" gave Toy Story's three-eyed aliens even with "two eyes, no antennae" in the prompt. Changing the species ("classic grey aliens") fixed it.
 
 ## First ComfyUI deploy: Z-Image Turbo
 

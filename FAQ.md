@@ -67,6 +67,9 @@ The provider isn't on the OpenTofu registry, so a bare `runpod/runpod` doesn't r
 ### Why must the provider be 2.x?
 1.x uses RunPod's REST v1 API, which was switched off on 2026-11-16.
 
+### Why one folder per pod under `infra/`?
+Each folder is its own OpenTofu root with its own state, so `tofu -chdir=infra/vllm destroy` can't touch the ComfyUI pod. One root with on/off variables would work too, but forgetting a `-var` on apply destroys the other pod.
+
 ### What from `infra/` goes into git?
 The `.tf` files and `.terraform.lock.hcl`, which pins provider versions and checksums. These stay out:
 - `*.tfstate`: what tofu last saw of the resources. It can hold secrets in plain text.
@@ -158,8 +161,8 @@ A RunPod pod runs one container, so the frontend can't share the vLLM pod withou
 
 ### How do I run Open WebUI on the laptop?
 ```sh
-VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) \
-VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) \
+VLLM_URL=$(tofu -chdir=infra/vllm output -raw vllm_url) \
+VLLM_KEY=$(tofu -chdir=infra/vllm output -raw vllm_api_key) \
 docker compose -f webui/compose.yaml up -d
 ```
 Then open `localhost:3000`. Stop it with `docker compose -p webui down`: with `-f`, compose demands `VLLM_URL` and `VLLM_KEY` even to stop. The first account to sign up becomes admin; users and chats live in the `open-webui` Docker volume, on the laptop. `ENABLE_PERSISTENT_CONFIG=false` matters: otherwise Open WebUI saves the vLLM URL to its database on first start and ignores the env var after, and the URL changes with every new pod.

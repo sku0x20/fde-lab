@@ -1,6 +1,6 @@
 """Stream one chat completion and report TTFT, decode tokens/s and the reply.
 
-usage: VLLM_URL=$(tofu -chdir=infra output -raw vllm_url) VLLM_KEY=$(tofu -chdir=infra output -raw vllm_api_key) python3 -I scripts/chat_bench.py [max_tokens] [thinking:0|1]
+usage: VLLM_URL=$(tofu -chdir=infra/vllm output -raw vllm_url) VLLM_KEY=$(tofu -chdir=infra/vllm output -raw vllm_api_key) python3 -I scripts/chat_bench.py [max_tokens] [thinking:0|1]
 """
 import json, os, sys, time, urllib.request
 

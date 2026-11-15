@@ -20,6 +20,7 @@ A personal lab for forward deployed engineer (FDE) skills: taking models and AI 
 
 ## Notes
 
+- Notes live in `FAQ.md`. When the user asks a question worth keeping (concepts, decisions and their why, gotchas), add it there without asking. Skip one-off questions (currency conversion, status checks).
 - Write notes as a FAQ: `##` topics, `###` questions, short direct answers with the why. Commands where they belong.
 - Record measured numbers (tokens/s, memory, latency, load time) with the model, quantization and runtime they came from. Mark estimates as estimates.
 - Crisp: no URLs, no filler.

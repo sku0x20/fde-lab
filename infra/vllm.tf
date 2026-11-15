@@ -26,7 +26,9 @@ resource "runpod_pod" "vllm" {
   # --host 0.0.0.0: reachable by RunPod's proxy, not just localhost
   # --max-model-len: the 262K default would reserve far more KV cache than 24 GB allows
   # --reasoning-parser: splits Qwen3.5's <think> block into reasoning_content
-  args = "Qwen/Qwen3.5-4B --host 0.0.0.0 --port 8000 --max-model-len 32768 --reasoning-parser qwen3"
+  # --enable-auto-tool-choice, --tool-call-parser: accept `tools` and turn the model's tool-call
+  #   output into tool_calls. Open WebUI sends tools on every chat. Parser from the model card
+  args = "Qwen/Qwen3.5-4B --host 0.0.0.0 --port 8000 --max-model-len 32768 --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder"
 
   env = {
     VLLM_API_KEY = random_password.vllm_api_key.result

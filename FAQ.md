@@ -96,6 +96,9 @@ A base model trained further to follow instructions and chat:
 
 Instruct models ship a **chat template**: special tokens marking the system, user and assistant turns. vLLM applies it on `/v1/chat/completions`. A missing or wrong template is a common cause of rambling output. Serve instruct models; use base models as a starting point for fine-tuning.
 
+### What's a model card?
+The `README.md` of a model's Hugging Face repo: the model's manual, written by its publisher. It covers what the model is (size, architecture, context length, modalities), the license, benchmarks, intended use and limits, recommended sampling settings, and how to serve it, often with exact `vllm serve` / SGLang commands. Check it first when serving a model: the right reasoning and tool-call parsers (`qwen3`, `qwen3_coder` for Qwen3.5) come from there, not from guessing.
+
 ### Which current models fit one GPU?
 Hugging Face, 2026-11-15. All Apache 2.0, ungated, supported by vLLM v0.33.0:
 
@@ -301,4 +304,4 @@ The proxy rejects urllib's default `User-Agent` (`Python-urllib/...`). Set any o
 `vllm/vllm-openai` has entrypoint `vllm serve`. A plain-string `args` on `runpod_pod` becomes the container's cmd and keeps that entrypoint, so `args` starts with the model name. To override the entrypoint too, use the JSON form: `{"entrypoint":[...],"cmd":[...]}`.
 
 ### Why does every Open WebUI chat fail with `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser`?
-Open WebUI v0.13 defaults to native function calling: each chat attaches its built-in tools (memory, chat search, notes) with `tool_choice: "auto"`. vLLM rejects that unless started with `--enable-auto-tool-choice --tool-call-parser <parser>`; for Qwen3.5 the model card's parser is `qwen3_coder`. The other fix is per model in Open WebUI: set function calling to legacy (prompt-based), which sends no `tools`.
+Open WebUI v0.13 defaults to native function calling: each chat attaches its built-in tools (memory, chat search, notes) with `tool_choice: "auto"`. vLLM rejects that unless started with `--enable-auto-tool-choice --tool-call-parser <parser>`; for Qwen3.5 the model card's parser is `qwen3_coder`. The other fix is per model in Open WebUI: set function calling to legacy (prompt-based), which sends no `tools`. Changing `args` updates the pod in place (same id and URL); vLLM was back 2.5 min later, the image already on the host.

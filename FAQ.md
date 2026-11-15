@@ -120,6 +120,36 @@ It sets the cold start: a host with the image cached started the container in 6 
 ### Why vLLM first?
 It's the production standard, the one customers most often run. It serves Hugging Face models as they are, through an OpenAI-compatible API, with continuous batching. The cost is a large image and a slow cold start. SGLang makes a good second runtime to compare against it.
 
+## Tokens
+
+### What's a token?
+A chunk of text from the model's fixed vocabulary (Qwen3.5: 248,320 tokens). A common word is one token, a rare word several; in English a token is about ¾ of a word (estimate). The model reads and writes token IDs, so limits, speed and billing are all counted in tokens.
+- **prompt tokens**: the input, including the chat template's markers
+- **completion tokens**: what the model generates
+
+### How does generation work?
+Two phases:
+1. **Prefill**: all prompt tokens are processed at once, in parallel. Fast.
+2. **Decode**: output comes one token at a time, each depending on all the tokens before it. Can't be parallelized within one request.
+
+### Why ~100 tokens/s for one request on a 4090?
+Each decode step reads all the weights from GPU memory. An RTX 4090 moves ~1,000 GB/s and the weights are 9.2 GB (8.56 GiB), so one request tops out at ~110 tok/s (estimate). Measured: 102. Single-stream decode is limited by memory bandwidth, not compute. Batching reuses each read of the weights across many requests, which is where serving throughput comes from.
+
+### What's TTFT?
+Time to first token: network + queueing + prefill. How long until the reply starts. Decode tok/s is how fast it then streams.
+
+### What's the KV cache?
+Attention makes each new token look back at all earlier ones. To avoid recomputing them, the model stores a key and a value vector per token per attention layer. That's the KV cache. It grows with context length, so it caps how much text and how many requests fit on the GPU. Qwen3.5-4B: ~36 KiB per token, small because only 8 of its 32 layers use full attention; the other 24 use linear attention with a fixed-size state.
+
+### What's the difference between `--max-model-len` and `max_tokens`?
+- `--max-model-len` (server): the most context one request can use, prompt plus output. vLLM checks at startup that one full-length request fits in the KV cache.
+- `max_tokens` (request): the most output tokens to generate. The model usually stops sooner, at its end-of-answer token.
+
+Prompt + `max_tokens` must fit within `--max-model-len`.
+
+### What does "maximum concurrency 9.61x for 32,768 tokens" mean?
+KV cache tokens ÷ `--max-model-len`: 314,857 ÷ 32,768 = 9.6. If every request used the full 32K context, 9 could run at once. Real requests are shorter: at ~420 tokens each, ~750 would fit. vLLM hands out the cache in small pages as requests grow (PagedAttention), not 32K upfront. `--max-num-seqs` also caps how many run at once.
+
 ## First deploy: Qwen3.5-4B on vLLM
 
 Setup for every number below: Qwen/Qwen3.5-4B, BF16, vLLM v0.33.0, one RTX 4090 (24 GB), RunPod secure cloud (US-NC-1, host CUDA 13.2), `--max-model-len 32768`, 2026-11-15.
@@ -135,6 +165,13 @@ Measured with `scripts/chat_bench.py` (streamed, one request at a time, ~31-toke
 | thinking on | 1500 (hit limit) | 0.99 s | 101.3 tok/s |
 
 vLLM's own log agreed: 101.2 tok/s in a fully busy 10 s window. TTFT was ~1.0 s from India through RunPod's proxy. A plain `GET /v1/models` round trip took ~0.4 s of that; a 31-token prefill takes milliseconds, so the rest is likely proxy overhead (unverified). With thinking on, all 1500 tokens went to reasoning and no answer came back: thinking needs a much larger `max_tokens`.
+
+### How does `scripts/chat_bench.py` measure?
+It sends one streamed request (`stream: true`), so tokens arrive as server-sent events, and timestamps them:
+- TTFT = first text chunk − request sent
+- decode tok/s = (completion tokens − 1) ÷ (last chunk − first chunk), which leaves out network and prefill
+
+`stream_options.include_usage` gives exact token counts. `chat_template_kwargs.enable_thinking` turns Qwen's thinking on or off. RunPod's proxy rejects urllib's default User-Agent, so the script sets its own.
 
 ### Where does the GPU memory go?
 From vLLM's startup log:
